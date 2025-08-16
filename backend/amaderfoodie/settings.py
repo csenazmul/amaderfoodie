@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +29,6 @@ DEBUG = True
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "localhost, 127.0.0.1").split(",")
 
-import os
 from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
@@ -44,9 +44,10 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     # Third party apps
+    'drf_yasg',
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_framework_swagger',
+    #'rest_framework_swagger',
     'rest_framework_simplejwt',
     'corsheaders',
     'django_extensions',
@@ -78,6 +79,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    'allauth.account.middleware.AccountMiddleware',
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
