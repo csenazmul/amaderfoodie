@@ -74,15 +74,15 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "allauth.account.middleware.AuthenticationMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    'allauth.account.middleware.AccountMiddleware',
+    "django.contrib.auth.middleware.AuthenticationMiddleware",  # Standard Django auth
+    "allauth.account.middleware.AccountMiddleware",             # Optional, only if you use account middleware features
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
 
 # Allow CORS for all origins (for development)
 CORS_ALLOW_ALL_ORIGINS = True
