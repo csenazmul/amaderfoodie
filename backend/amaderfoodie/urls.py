@@ -20,6 +20,22 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+schema_view = get_schema_view(
+   openapi.Info(
+      title="AmaderFoodie API",
+      default_version='v1',
+      description="API documentation for AmaderFoodie",
+   ),
+   public=True,
+   permission_classes=(permissions.AllowAny,),
+)
+
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
@@ -31,6 +47,10 @@ urlpatterns = [
     path('api/blogs/', include('blogs.urls')),
     path('api/payments/', include('payments.urls')),
     path('api/', include('core.urls')),
+
+    # API docs
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     
     # Django Allauth URLs
     path('accounts/', include('allauth.urls')),
@@ -39,3 +59,7 @@ urlpatterns = [
 # Serve media files during development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+# http://127.0.0.1:8000/swagger/ → Swagger UI
+# http://127.0.0.1:8000/redoc/ → ReDoc UI
