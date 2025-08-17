@@ -130,3 +130,151 @@ class User(AbstractUser):
         if self.blogs_count > 0:
             self.blogs_count -= 1
             self.save(update_fields=['blogs_count'])
+
+
+class UserProfile(models.Model):
+    """Extended user profile for additional information"""
+    
+    GENDER_CHOICES = [
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('O', 'Other'),
+        ('P', 'Prefer not to say'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    
+    # Personal information
+    gender = models.CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        blank=True,
+        verbose_name='Gender'
+    )
+    birth_date = models.DateField(blank=True, null=True, verbose_name='Birth Date')
+    
+    # Address
+    address = models.TextField(blank=True, verbose_name='Address')
+    city = models.CharField(max_length=100, blank=True, verbose_name='City')
+    state = models.CharField(max_length=100, blank=True, verbose_name='State')
+    country = models.CharField(max_length=100, blank=True, verbose_name='Country')
+    postal_code = models.CharField(max_length=20, blank=True, verbose_name='Postal Code')
+    
+    # Preferences
+    language = models.CharField(
+        max_length=10,
+        default='en',
+        verbose_name='Preferred Language'
+    )
+    timezone = models.CharField(
+        max_length=50,
+        default='UTC',
+        verbose_name='Timezone'
+    )
+    
+    # Email preferences
+    email_on_new_follower = models.BooleanField(default=True)
+    email_on_recipe_comment = models.BooleanField(default=True)
+    email_on_blog_comment = models.BooleanField(default=True)
+    email_on_new_recipe = models.BooleanField(default=False)
+    email_on_new_blog = models.BooleanField(default=False)
+    
+    # Privacy settings
+    show_email = models.BooleanField(default=False)
+    show_phone = models.BooleanField(default=False)
+    show_birth_date = models.BooleanField(default=False)
+    allow_messages = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'User Profile'
+        verbose_name_plural = 'User Profiles'
+    
+    def __str__(self):
+        return f"{self.user.full_name}'s Profile"
+
+
+class Follower(models.Model):
+    """User follower relationship model"""
+    
+    follower = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following'
+    )
+    following = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='followers'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Follower'
+        verbose_name_plural = 'Followers'
+        unique_together = ['follower', 'following']
+    
+    def __str__(self):
+        return f"{self.follower.full_name} follows {self.following.full_name}"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        
+        # Update follower counts
+        self.following.followers_count = self.following.followers.count()
+        self.following.save(update_fields=['followers_count'])
+        
+        self.follower.following_count = self.follower.following.count()
+        self.follower.save(update_fields=['following_count'])
+    
+    def delete(self, *args, **kwargs):
+        # Get users before deletion
+        following_user = self.following
+        follower_user = self.follower
+        
+        super().delete(*args, **kwargs)
+        
+        # Update follower counts
+        following_user.followers_count = following_user.followers.count()
+        following_user.save(update_fields=['followers_count'])
+        
+        follower_user.following_count = follower_user.following.count()
+        follower_user.save(update_fields=['following_count'])
+
+
+class UserActivity(models.Model):
+    """Track user activities on the platform"""
+    
+    ACTIVITY_TYPES = [
+        ('recipe_created', 'Recipe Created'),
+        ('recipe_updated', 'Recipe Updated'),
+        ('recipe_deleted', 'Recipe Deleted'),
+        ('recipe_liked', 'Recipe Liked'),
+        ('recipe_saved', 'Recipe Saved'),
+        ('recipe_commented', 'Recipe Commented'),
+        ('blog_created', 'Blog Created'),
+        ('blog_updated', 'Blog Updated'),
+        ('blog_deleted', 'Blog Deleted'),
+        ('blog_liked', 'Blog Liked'),
+        ('blog_commented', 'Blog Commented'),
+        ('profile_updated', 'Profile Updated'),
+        ('user_followed', 'User Followed'),
+        ('user_unfollowed', 'User Unfollowed'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
+    description = models.TextField()
+    related_object_id = models.PositiveIntegerField(blank=True, null=True)
+    related_object_type = models.CharField(max_length=50, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'User Activity'
+        verbose_name_plural = 'User Activities'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.full_name} - {self.get_activity_type_display()}"
