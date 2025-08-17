@@ -16,8 +16,26 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path('admin/', admin.site.urls),
+    
+    # API Authentication
+    path('api/auth/', include('accounts.urls')),
+    
+    # API Endpoints
+    path('api/recipes/', include('recipes.urls')),
+    path('api/blogs/', include('blogs.urls')),
+    path('api/payments/', include('payments.urls')),
+    path('api/', include('core.urls')),
+    
+    # Django Allauth URLs
+    path('accounts/', include('allauth.urls')),
 ]
+
+# Serve media files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
