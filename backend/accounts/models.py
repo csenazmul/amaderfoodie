@@ -5,11 +5,49 @@ from django.core.validators import RegexValidator
 from django.utils import timezone
 
 
+from django.contrib.auth.base_user import BaseUserManager
+from django.utils.translation import gettext_lazy as _
+
+# Create Custom User Manager
+# This manager will handle user creation and superuser creation
+# It will also ensure that the email field is unique and used as the username field
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError(_('The Email must be set'))
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError(_('Superuser must have is_staff=True.'))
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError(_('Superuser must have is_superuser=True.'))
+
+        return self.create_user(email, password, **extra_fields)
+    
+
+
 class User(AbstractUser):
     """Custom user model for AmaderFoodie platform"""
     
-    username = None  # Remove username field
+    # username = None  # Remove username field
     email = models.EmailField(unique=True, verbose_name='Email Address')
+
+    objects = CustomUserManager()
+
+    # USERNAME_FIELD = "email"
+    # # REQUIRED_FIELDS = []  # username বাদ, শুধু email + password নেবে
+
+    def __str__(self):
+        return self.email
     
     # Profile fields
     first_name = models.CharField(max_length=30, verbose_name='First Name')
@@ -278,3 +316,6 @@ class UserActivity(models.Model):
     
     def __str__(self):
         return f"{self.user.full_name} - {self.get_activity_type_display()}"
+
+
+

@@ -43,9 +43,9 @@ urlpatterns = [
     path('api/auth/', include('accounts.urls')),
     
     # API Endpoints
-    path('api/recipes/', include('recipes.urls')),
-    path('api/blogs/', include('blogs.urls')),
-    path('api/payments/', include('payments.urls')),
+    # path('api/recipes/', include('recipes.urls')),
+    # path('api/blogs/', include('blogs.urls')),
+    # path('api/payments/', include('payments.urls')),
     path('api/', include('core.urls')),
 
     # API docs
