@@ -7,7 +7,7 @@ A comprehensive Django REST API for the AmaderFoodie platform - a community-driv
 - **User Management**: Registration, login, profile management, social authentication
 
 - **User Login**: 
-![home](https://github.com/csenazmul/SMS_PROJ/blob/d6e5d8af38a47209166d75b0f7896cb544d39b8d/details_scr/home.png)
+![login](https://github.com/csenazmul/amaderfoodie/blob/e9d65d9facc0b79b66317ef04718ee107910d503/backend/workflows/login.png)
 - **User Management**: Registration, login, profile management, social authentication
 
 
