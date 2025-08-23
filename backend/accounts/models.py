@@ -1,56 +1,83 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.utils.text import slugify
 from django.utils import timezone
-
-# Create your models here.
-class CustomUserManager(BaseUserManager):
-    def create_user(self, username, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError("Email is required")
-        if not username:
-            raise ValueError("Username is required")
-
-        email = self.normalize_email(email)
-        user = self.model(username=username, email=email, **extra_fields)
-        user.set_password(password)  # hashes the password
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, username, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True)
-
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
-
-        return self.create_user(username, email, password, **extra_fields)
+from accounts.models import User
+import random, string
 
 
-class User(AbstractBaseUser, PermissionsMixin):
-    id = models.BigAutoField(primary_key=True)
-    username = models.CharField(max_length=50, unique=True)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)  # handled by AbstractBaseUser
+def generate_random_id(length=8):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choices(characters, k=length))
 
-    first_name = models.CharField(max_length=50, blank=True)
-    last_name = models.CharField(max_length=50, blank=True)
-    bio = models.TextField(blank=True)
-    profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
 
-    email_verified = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)  # required for admin login
+class BlogCategory(models.Model):
+    id = models.CharField(primary_key=True, max_length=8, default=generate_random_id, editable=False, unique=True)
+    name = models.CharField(max_length=100, unique=True)
+    slug = models.SlugField(max_length=120, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super(BlogCategory, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class Blog(models.Model):
+    id = models.CharField(primary_key=True, max_length=8, default=generate_random_id, editable=False, unique=True)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    image = models.ImageField(upload_to="blogs/", blank=True, null=True)
+    content = models.TextField()
+
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="blogs")
+    category = models.ForeignKey(BlogCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="blogs")
 
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
-
-    objects = CustomUserManager()
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            while Blog.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+        super(Blog, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.username
+        return self.title
+
+
+class Comment(models.Model):
+    id = models.CharField(primary_key=True, max_length=8, default=generate_random_id, editable=False, unique=True)
+    content = models.TextField()
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+    blog = models.ForeignKey(Blog, on_delete=models.CASCADE, related_name="comments", null=True, blank=True)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Comment by {self.user.username} on {self.blog}"
+
+
+class Like(models.Model):
+    id = models.CharField(primary_key=True, max_length=8, default=generate_random_id, editable=False, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="likes")
+    blog = models.ForeignKey(Blog, on_delete=models.CASCADE, related_name="likes", null=True, blank=True)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "blog")  
+
+    def __str__(self):
+        return f"{self.user.username} liked {self.blog}"
